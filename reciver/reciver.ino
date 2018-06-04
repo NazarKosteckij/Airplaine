@@ -10,12 +10,14 @@
 #define YAW_AXIS_PIN A2 // Z axis
 #define THRUST_AXIS_PIN A3
 
+#define TESTER_MODE false
+
 unsigned long lastUpdate = 0;
 
 Servo esc;
 Servo leftAileron;
 Servo rightAileron;
-Servo elevator; 
+Servo elevator;
 
 int rollAxis = 0; // rotation by ailerons
 int pitchAxis = 0; // rotation by elevator
@@ -37,9 +39,13 @@ WirelessPackage dataPacket = {};
 
 RF24 radio(7, 8);
 void setup() {
-  Serial.begin(57600);
+  Serial.begin(9600);
   radio.begin();
+  //  pinMode(13, OUTPUT);
 
+  //  digitalWrite(13, HIGH);
+  delay(1000);
+  //  digitalWrite(13, LOW);
   radio.setPALevel(RF24_PA_MAX);
   radio.openWritingPipe(pipes[0]);
   radio.openReadingPipe(1, pipes[1]);
@@ -50,12 +56,16 @@ void setup() {
 
   rightAileron.attach(6);
   leftAileron.attach(5);
-  elevator.attach(3); 
+  elevator.attach(3);
 }
 
 void loop() {
-  getJoysticState();
-  moveServos(); 
+//#if TESTER_MODE
+//  getLocaJoysticState();
+//#else
+  reciveRemouteState();
+//#endif
+  moveServos();
 }
 
 int escSpeed(int val) {
@@ -63,58 +73,69 @@ int escSpeed(int val) {
 }
 
 int aileronDeg(int val) {
-  return map(val, 0, 1023, 40, 125);
+  return map(val, 0, 1023, 40, 125);  //  60-100
 }
 
 void moveServos() {
   int s = escSpeed(thrust);
-  //  Serial.print("thrust=");
-  //    Serial.print(s);
-  //    Serial.print("  ");
+  //    Serial.print("thrust=");
+  //      Serial.print(s);
+  //      Serial.print("  ");
   esc.writeMicroseconds(s);
 
-  //  Serial.print("rollAxis=");
-  //  Serial.print(t);
-  //  Serial.print("  ");
+  //    Serial.print("rollAxis=");
+  //    Serial.print(t);
+  //    Serial.print("  ");
 
   rightAileron.write(aileronDeg(rollAxis));
   //  if (lamdingMode) {
   //    leftAileron.write(180 - t);
   //  } else
-   
-  leftAileron.write(aileronDeg(rollAxis)); 
-  
+
+  leftAileron.write(aileronDeg(rollAxis));
+
   elevator.write(map(pitchAxis, 0, 1023, 0, 180));
 }
-void getJoysticState() {
- 
+
+void reciveRemouteState() {
+
   unsigned long got_time = millis();
   if ( radio.available() ) {
+    Serial.print("Radio");
+
+    Serial.println(thrust);
+
     radio.read( &dataPacket, sizeof(dataPacket) );
     delay(20);
+   
     printPackage(dataPacket);
 
     thrust = dataPacket.thrust;
     pitchAxis = dataPacket.elevator;
     yawAxis = dataPacket.rudder;
     rollAxis = dataPacket.aileron;
-
-    moveServos(); 
+    
+    moveServos();
   }
-   
+
   if (got_time - lastUpdate > 10000) {
     thrust = 0;
   }
   if (got_time - lastUpdate > 5000) {
     thrust = 0;
     radio.begin();
-  
+
     radio.setPALevel(RF24_PA_MAX);
     radio.openWritingPipe(pipes[0]);
     radio.openReadingPipe(1, pipes[1]);
     radio.startListening();
     delay(100);
-  } 
+  }
+}
+
+void getLocaJoysticState() {
+  thrust = analogRead(A2);
+  Serial.println(thrust);
 }
 
 void printPackage(const WirelessPackage &pckg) {
@@ -122,8 +143,8 @@ void printPackage(const WirelessPackage &pckg) {
   Serial.print(pckg.thrust);
   Serial.print(", elevator='");
   Serial.print(pckg.elevator);
-//  Serial.print("', rudder=");
-//  Serial.print(pckg.rudder);
+  //  Serial.print("', rudder=");
+  //  Serial.print(pckg.rudder);
   Serial.print("', aileron=");
   Serial.print(pckg.aileron);
   Serial.print("}\n");
