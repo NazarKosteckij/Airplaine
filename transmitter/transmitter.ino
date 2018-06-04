@@ -40,8 +40,8 @@ void setup() {
 }
 void loop() {
   readJoysticValues(); 
-  sendData();
-//  delay(20);
+  sendData(); 
+  delay(20);
 }
 
 void readJoysticValues() {
@@ -57,20 +57,23 @@ void readJoysticValues() {
 }
 
 void sendData() {
+  radio.stopListening();
+
   Serial.print("Sending ");
 //  printPackage(dataPacket);
   digitalWrite(3, HIGH);
 
   
-  bool ok = radio.write(&dataPacket, sizeof(dataPacket));
-
+  bool ok = radio.write(&dataPacket, sizeof(dataPacket)); 
   if (ok)
-    Serial.print(" ok...");
+    Serial.println(" ok...");
   else  
-    Serial.print(" FAIL...");
+    Serial.println(" FAIL...");
 
   digitalWrite(3, LOW);
   dataPacket = {};
+  radio.startListening();
+
 }
 
 void printPackage(const WirelessPackage &dataPacket) {

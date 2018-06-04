@@ -66,6 +66,8 @@ void loop() {
   reciveRemouteState();
 //#endif
   moveServos();
+   
+   
 }
 
 int escSpeed(int val) {
@@ -73,7 +75,7 @@ int escSpeed(int val) {
 }
 
 int aileronDeg(int val) {
-  return map(val, 0, 1023, 40, 125);  //  60-100
+  return map(val, 0, 1023, 70, 98);  //  60-100 0-20-40 // 0 - 10 - 28
 }
 
 void moveServos() {
@@ -94,28 +96,28 @@ void moveServos() {
 
   leftAileron.write(aileronDeg(rollAxis));
 
-  elevator.write(map(pitchAxis, 0, 1023, 0, 180));
+  elevator.write(map(pitchAxis, 0, 1023, 60, 100));
 }
 
 void reciveRemouteState() {
 
   unsigned long got_time = millis();
   if ( radio.available() ) {
-    Serial.print("Radio");
-
-    Serial.println(thrust);
-
-    radio.read( &dataPacket, sizeof(dataPacket) );
-    delay(20);
-   
-    printPackage(dataPacket);
+    Serial.println("Radio");
+    
+      
+//    Serial.println(thrust);
+    bool done = false;
+    while (!done){ 
+      done = radio.read( &dataPacket, sizeof(dataPacket) );
+      delay(20);
+    }
+    //printPackage(dataPacket);
 
     thrust = dataPacket.thrust;
     pitchAxis = dataPacket.elevator;
     yawAxis = dataPacket.rudder;
-    rollAxis = dataPacket.aileron;
-    
-    moveServos();
+    rollAxis = dataPacket.aileron; 
   }
 
   if (got_time - lastUpdate > 10000) {
